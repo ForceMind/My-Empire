@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>朕的天下 | My Empire</title>
+<style>
+    body { background: #f6f1e7; font-family: "Microsoft YaHei", sans-serif; color: #333; text-align: center; }
+    h1 { margin-top: 20px; color: #a87b0f; }
+    .stats { margin: 10px; padding: 10px; background: #fff6e0; border: 2px solid #d4b25d; border-radius: 10px; display: inline-block; }
+    button { margin: 5px; padding: 10px 20px; background: #d4b25d; border: none; border-radius: 5px; color: #fff; font-weight: bold; cursor: pointer; }
+    button:hover { background: #b7943e; }
+    .log { width: 80%; margin: auto; text-align: left; margin-top: 15px; background: #fff; padding: 10px; border-radius: 8px; border: 1px solid #ccc; min-height: 150px; }
+</style>
+</head>
+<body>
+
+<h1>朕的天下 <br><small>My Empire</small></h1>
+
+<div class="stats">
+    <p>月份：<span id="month">1</span></p>
+    <p>国库：<span id="treasury">1000</span></p>
+    <p>民心：<span id="people">80</span></p>
+    <p>军力：<span id="army">500</span></p>
+    <p>声望：<span id="fame">50</span></p>
+</div>
+
+<div>
+    <button onclick="doAction('内政')">内政</button>
+    <button onclick="doAction('军事')">军事</button>
+    <button onclick="doAction('外交')">外交</button>
+    <button onclick="doAction('宫廷')">宫廷</button>
+    <button onclick="nextTurn()">结束回合</button>
+</div>
+
+<div class="log" id="log">
+    <strong>游戏开始：</strong> 朕已登基，天下由我掌握！
+</div>
+
+<script>
+let month = 1;
+let treasury = 1000;
+let people = 80;
+let army = 500;
+let fame = 50;
+
+const events = [
+    { text: "今年丰收，国库+200，民心+5", treasury: 200, people: 5, army: 0, fame: 0 },
+    { text: "边境小规模冲突，军力-50，声望+2", treasury: 0, people: 0, army: -50, fame: 2 },
+    { text: "朝臣上疏：减免赋税，国库-100，民心+10", treasury: -100, people: 10, army: 0, fame: 0 },
+    { text: "大臣贪污，国库-50，声望-5", treasury: -50, people: 0, army: 0, fame: -5 },
+    { text: "举办公祭典礼，民心+3，声望+5", treasury: 0, people: 3, army: 0, fame: 5 }
+];
+
+function doAction(type) {
+    const log = document.getElementById("log");
+    log.innerHTML += `<br>朕处理了${type}事务。`;
+}
+
+function nextTurn() {
+    month++;
+    document.getElementById("month").innerText = month;
+
+    // 随机事件
+    let ev = events[Math.floor(Math.random() * events.length)];
+    treasury += ev.treasury;
+    people += ev.people;
+    army += ev.army;
+    fame += ev.fame;
+
+    // 更新数值
+    document.getElementById("treasury").innerText = treasury;
+    document.getElementById("people").innerText = people;
+    document.getElementById("army").innerText = army;
+    document.getElementById("fame").innerText = fame;
+
+    // 日志
+    const log = document.getElementById("log");
+    log.innerHTML += `<br><strong>本月事件：</strong>${ev.text}`;
+}
+</script>
+
+</body>
+</html>

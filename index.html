@@ -1,83 +1,701 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<title>朕的天下 | My Empire</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+<title>朕的天下｜My Empire v0.4</title>
 <style>
-    body { background: #f6f1e7; font-family: "Microsoft YaHei", sans-serif; color: #333; text-align: center; }
-    h1 { margin-top: 20px; color: #a87b0f; }
-    .stats { margin: 10px; padding: 10px; background: #fff6e0; border: 2px solid #d4b25d; border-radius: 10px; display: inline-block; }
-    button { margin: 5px; padding: 10px 20px; background: #d4b25d; border: none; border-radius: 5px; color: #fff; font-weight: bold; cursor: pointer; }
-    button:hover { background: #b7943e; }
-    .log { width: 80%; margin: auto; text-align: left; margin-top: 15px; background: #fff; padding: 10px; border-radius: 8px; border: 1px solid #ccc; min-height: 150px; }
+  :root{
+    --gold:#d4b25d; --gold-dark:#b7943e; --paper:#f6f1e7; --ink:#333;
+    --card:#fff; --line:#dcdcdc; --muted:#7a7a7a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:"Microsoft YaHei",system-ui,-apple-system,Segoe UI,Roboto;}
+  header{padding:14px 10px;text-align:center;background:linear-gradient(#f8ead0,#f3dfb2);}
+  h1{margin:0;color:#a87b0f;font-weight:900;letter-spacing:1px}
+  h1 small{display:block;font-weight:600;color:#a87b0fb0}
+  .wrap{max-width:1200px;margin:0 auto;padding:8px}
+  .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;box-shadow:0 2px 0 #00000008}
+  .muted{color:var(--muted);font-size:.92em}
+  .row{display:flex;gap:8px;align-items:center;justify-content:space-between}
+  .tag{display:inline-block;padding:2px 8px;border-radius:999px;background:#f3eee1;border:1px solid var(--gold);font-size:12px}
+  button{background:var(--gold);border:none;color:#fff;font-weight:800;padding:10px 14px;border-radius:8px;cursor:pointer}
+  button:hover{background:var(--gold-dark)}
+  .btn-ghost{background:#fff;color:#a87b0f;border:1px solid var(--gold)}
+  .panel{display:grid;grid-template-columns:1.35fr .65fr;gap:10px;margin-top:10px}
+  .grid-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  #log{height:280px;overflow:auto;font-size:14px;line-height:1.5}
+  #chart{width:100%;height:160px;background:#fff;border:1px solid var(--line);border-radius:8px}
+  .section h3{margin:.2em 0 .4em}
+  select, input[type="checkbox"], input[type="radio"]{transform:translateY(1px)}
+  .prov-list{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .prov{border:1px solid var(--line);border-radius:10px;padding:8px;background:#fff}
+  .bar{height:8px;background:#eee;border-radius:999px;overflow:hidden;margin:4px 0}
+  .bar>i{display:block;height:100%;background:#a87b0f}
+  .modal-mask{position:fixed;inset:0;background:#0006;display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
+  .modal{background:#fff;border-radius:12px;max-width:720px;width:100%;padding:16px;border:1px solid var(--line)}
+  .choices{display:grid;gap:8px;margin-top:8px}
+  @media (max-width:980px){.stats{grid-template-columns:repeat(2,1fr)} .panel{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
+<header>
+  <h1>朕的天下 <small>My Empire</small></h1>
+</header>
 
-<h1>朕的天下 <br><small>My Empire</small></h1>
+<div class="wrap">
+  <!-- 顶部数值 -->
+  <section class="stats">
+    <div class="card">
+      <div class="row"><strong>年月</strong><span id="ym">开元 1 年 1 月</span></div>
+      <div class="muted">每回合=1个月</div>
+    </div>
+    <div class="card">
+      <div class="row"><strong>国库</strong><span id="treasury">1000</span></div>
+      <div class="muted">税收-军费-宫廷=净现金流</div>
+    </div>
+    <div class="card">
+      <div class="row"><strong>民心</strong><span id="happiness">80</span></div>
+      <div class="muted">低于15易爆内乱</div>
+    </div>
+    <div class="card">
+      <div class="row"><strong>军力</strong><span id="army">500</span></div>
+      <div class="muted">维持费与规模相关</div>
+    </div>
+    <div class="card">
+      <div class="row"><strong>声望</strong><span id="fame">50</span></div>
+      <div class="muted">影响外交与士气</div>
+    </div>
+  </section>
 
-<div class="stats">
-    <p>月份：<span id="month">1</span></p>
-    <p>国库：<span id="treasury">1000</span></p>
-    <p>民心：<span id="people">80</span></p>
-    <p>军力：<span id="army">500</span></p>
-    <p>声望：<span id="fame">50</span></p>
+  <!-- 主面板 -->
+  <section class="panel">
+    <div class="card">
+      <div class="grid-actions">
+        <button onclick="openSection('内政')">内政</button>
+        <button onclick="openSection('军事')">军事</button>
+        <button onclick="openSection('外交')">外交</button>
+        <button onclick="openSection('宫廷')">宫廷</button>
+      </div>
+      <hr>
+      <div class="row">
+        <div>
+          <strong>政令</strong>
+          <div class="muted">每月可执行一次行动/调整一次政策</div>
+        </div>
+        <div>
+          <button class="btn-ghost" onclick="saveGame()">存档</button>
+          <button class="btn-ghost" onclick="loadGame()">读档</button>
+          <button class="btn-ghost" onclick="resetGame()">新档</button>
+        </div>
+      </div>
+      <div id="sectionArea" class="section" style="margin-top:8px"></div>
+      <hr>
+      <div class="row">
+        <button onclick="endTurn()">结束回合</button>
+        <span class="muted">结束后：固定收支→事件→推进时间</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>月度记事</h3>
+      <div id="log"></div>
+      <h3 style="margin-top:10px">现金流（国库）</h3>
+      <canvas id="chart"></canvas>
+    </div>
+  </section>
+
+  <!-- 省域面板 -->
+  <section class="card" style="margin-top:10px">
+    <div class="row">
+      <h3 style="margin:.2em 0">省域总览</h3>
+      <div class="muted">选择省份进行定向建设、赈灾或兴学</div>
+    </div>
+    <div class="prov-list" id="provList"></div>
+  </section>
+
+  <div style="margin:10px 0;text-align:right" class="muted">v0.4 省域与扩展事件</div>
 </div>
 
-<div>
-    <button onclick="doAction('内政')">内政</button>
-    <button onclick="doAction('军事')">军事</button>
-    <button onclick="doAction('外交')">外交</button>
-    <button onclick="doAction('宫廷')">宫廷</button>
-    <button onclick="nextTurn()">结束回合</button>
-</div>
-
-<div class="log" id="log">
-    <strong>游戏开始：</strong> 朕已登基，天下由我掌握！
+<!-- 事件弹窗 -->
+<div class="modal-mask" id="modalMask">
+  <div class="modal">
+    <div class="row">
+      <h3 id="modalTitle">朝报</h3>
+      <button class="btn-ghost" onclick="closeModal()">× 关闭</button>
+    </div>
+    <div id="modalBody"></div>
+  </div>
 </div>
 
 <script>
-let month = 1;
-let treasury = 1000;
-let people = 80;
-let army = 500;
-let fame = 50;
+/* =======================
+   初始国家与省域
+======================= */
+const $ = s=>document.querySelector(s);
+const logBox = $('#log');
 
-const events = [
-    { text: "今年丰收，国库+200，民心+5", treasury: 200, people: 5, army: 0, fame: 0 },
-    { text: "边境小规模冲突，军力-50，声望+2", treasury: 0, people: 0, army: -50, fame: 2 },
-    { text: "朝臣上疏：减免赋税，国库-100，民心+10", treasury: -100, people: 10, army: 0, fame: 0 },
-    { text: "大臣贪污，国库-50，声望-5", treasury: -50, people: 0, army: 0, fame: -5 },
-    { text: "举办公祭典礼，民心+3，声望+5", treasury: 0, people: 3, army: 0, fame: 5 }
+const provinces = [
+  {id:'并州', border:true, prosperity:55, stability:68, note:'北境要冲'},
+  {id:'幽州', border:true, prosperity:48, stability:62, note:'边贸繁忙'},
+  {id:'雍州', border:false, prosperity:60, stability:72, note:'宗庙之地'},
+  {id:'豫州', border:false, prosperity:64, stability:70, note:'沃野千里'},
+  {id:'江南', border:false, prosperity:75, stability:78, note:'鱼米之乡'},
+  {id:'岭南', border:true, prosperity:58, stability:65, note:'海贸门户'},
 ];
 
-function doAction(type) {
-    const log = document.getElementById("log");
-    log.innerHTML += `<br>朕处理了${type}事务。`;
+const state = {
+  year:1, month:1,
+  treasury:1000, happiness:80, army:500, fame:50,
+  pop:120,
+  policy:{tax:1, relief:false, conscription:false},
+  officers:{chancellor: randomOfficer('文'), general: randomOfficer('武')},
+  historyCash:[1000],
+  turnActionUsed:false, gameOver:false,
+  buildBuffNext:0, peaceBuffer:0, warHeat:0, reformNext:0
+};
+
+function randomOfficer(type){
+  const pool = type==='文'
+    ? [
+      {name:'张居正', trait:'理财',  desc:'税赋效率+10%。', effects:{taxBonus:0.10}},
+      {name:'王安石', trait:'变法',  desc:'改革加速，民心波动±2。', effects:{reform:1, publicShift:2}},
+      {name:'刘墉',   trait:'清廉',  desc:'贪腐事件概率-30%。', effects:{antiCorrupt:0.30}},
+      {name:'陶弘景', trait:'学术',  desc:'兴学成本-30%，效果+1。', effects:{academyCost:-0.3, academyUp:+1}}
+    ]
+    : [
+      {name:'卫青', trait:'统兵', desc:'军心+5。', effects:{morale:5}},
+      {name:'李靖', trait:'奇谋', desc:'突袭战法+15%胜率。', effects:{tactic:0.15}},
+      {name:'岳飞', trait:'忠烈', desc:'士气+8，军力上限+100。', effects:{morale:8, armyCap:100}},
+      {name:'戚继光', trait:'练兵', desc:'征兵收益+20%。', effects:{recruitBoost:0.2}}
+    ];
+  return pool[Math.floor(Math.random()*pool.length)];
 }
 
-function nextTurn() {
-    month++;
-    document.getElementById("month").innerText = month;
+/* =======================
+   渲染与工具
+======================= */
+function clamp(x,a,b){ return Math.max(a,Math.min(b,x)); }
 
-    // 随机事件
-    let ev = events[Math.floor(Math.random() * events.length)];
-    treasury += ev.treasury;
-    people += ev.people;
-    army += ev.army;
-    fame += ev.fame;
-
-    // 更新数值
-    document.getElementById("treasury").innerText = treasury;
-    document.getElementById("people").innerText = people;
-    document.getElementById("army").innerText = army;
-    document.getElementById("fame").innerText = fame;
-
-    // 日志
-    const log = document.getElementById("log");
-    log.innerHTML += `<br><strong>本月事件：</strong>${ev.text}`;
+function renderTop(){
+  $('#ym').textContent = `开元 ${state.year} 年 ${state.month} 月`;
+  $('#treasury').textContent = Math.round(state.treasury);
+  $('#happiness').textContent = clamp(state.happiness,0,100);
+  $('#army').textContent = Math.max(0,Math.round(state.army));
+  $('#fame').textContent = Math.round(state.fame);
+  renderProvinces();
 }
+
+function log(msg){
+  const line = document.createElement('div');
+  line.innerHTML = msg;
+  logBox.appendChild(line);
+  logBox.scrollTop = logBox.scrollHeight;
+}
+
+function renderProvinces(){
+  const box = $('#provList'); box.innerHTML='';
+  provinces.forEach(p=>{
+    const el = document.createElement('div'); el.className='prov';
+    el.innerHTML = `
+      <div class="row">
+        <div><strong>${p.id}</strong> ${p.border?'<span class="tag">边境</span>':''} <span class="muted">${p.note||''}</span></div>
+        <div class="muted">繁荣 ${Math.round(p.prosperity)}｜安定 ${Math.round(p.stability)}</div>
+      </div>
+      <div>繁荣</div>
+      <div class="bar"><i style="width:${clamp(p.prosperity,0,100)}%"></i></div>
+      <div>安定</div>
+      <div class="bar"><i style="width:${clamp(p.stability,0,100)}%"></i></div>
+    `;
+    box.appendChild(el);
+  });
+}
+
+function toast(msg){
+  const d=document.createElement('div');
+  d.textContent=msg;
+  d.style.cssText='position:fixed;left:50%;top:10px;transform:translateX(-50%);background:#000d;color:#fff;padding:8px 12px;border-radius:8px;z-index:99';
+  document.body.appendChild(d);
+  setTimeout(()=>d.remove(),1800);
+}
+
+/* =======================
+   版块
+======================= */
+function openSection(name){
+  if(state.turnActionUsed){ $('#sectionArea').innerHTML = `<div class="muted">本月已执行过行动，请结束回合。</div>`; return; }
+  if(name==='内政') $('#sectionArea').innerHTML = renderDomestic();
+  else if(name==='军事') $('#sectionArea').innerHTML = renderMilitary();
+  else if(name==='外交') $('#sectionArea').innerHTML = renderDiplomacy();
+  else $('#sectionArea').innerHTML = renderCourt();
+}
+
+function provSelectHtml(id='provPick'){
+  return `<select id="${id}">${provinces.map(p=>`<option value="${p.id}">${p.id}${p.border?'（边境）':''}</option>`).join('')}</select>`;
+}
+
+/* 内政 */
+function renderDomestic(){
+  const c = state.officers.chancellor;
+  return `
+    <h3>内政</h3>
+    <div class="row">
+      <div>税率：
+        <label><input type="radio" name="tax" value="0" ${state.policy.tax===0?'checked':''}>低</label>
+        <label><input type="radio" name="tax" value="1" ${state.policy.tax===1?'checked':''}>中</label>
+        <label><input type="radio" name="tax" value="2" ${state.policy.tax===2?'checked':''}>高</label>
+      </div>
+      <div>赈灾：<label><input type="checkbox" id="relief" ${state.policy.relief?'checked':''}> 开启（-50金/月 民心+2）</label></div>
+    </div>
+    <hr>
+    <div class="row"><div>定向建设（-120金，民心+3，来月税收+2%，繁荣+3）</div><div>${provSelectHtml()} <button onclick="actionBuild()">执行</button></div></div>
+    <div class="row"><div>定向兴学（-100金${c.effects.academyCost?-30*1+'%':''}，繁荣+2${c.effects.academyUp?`（+${c.effects.academyUp}）`:''}，声望+1）</div><div>${provSelectHtml('provAcademy')} <button onclick="actionAcademy()">执行</button></div></div>
+    <div class="row"><div>定向赈灾（-90金，安定+6）</div><div>${provSelectHtml('provRelief')} <button onclick="actionRelief()">执行</button></div></div>
+    <div class="muted">丞相：${c.name}｜${c.trait} — ${c.desc}</div>
+    <div style="margin-top:6px"><button onclick="applyDomestic()">确认税率/赈灾</button></div>
+  `;
+}
+function applyDomestic(){
+  state.policy.tax = (document.querySelector('input[name="tax"]:checked').value)|0;
+  state.policy.relief = $('#relief').checked;
+  state.turnActionUsed = true;
+  log(`内政：税率设为<b>${['低','中','高'][state.policy.tax]}</b>；赈灾${state.policy.relief?'开启':'关闭'}`);
+}
+function findProv(id){ return provinces.find(p=>p.id===id); }
+function actionBuild(){
+  const id = $('#provPick').value; const p = findProv(id);
+  if(state.treasury<120){ alert('国库不足'); return; }
+  state.treasury -= 120; state.happiness += 3; p.prosperity += 3; state.buildBuffNext += 0.02; state.turnActionUsed=true;
+  renderTop(); log(`内政：在<b>${id}</b>修渠筑路，繁荣+3，来月税收提升。`); $('#sectionArea').innerHTML='';
+}
+function actionAcademy(){
+  const id = $('#provAcademy').value; const p = findProv(id);
+  const c = state.officers.chancellor;
+  const cost = Math.max(20, 100 + Math.floor(100*(c.effects.academyCost||0)));
+  if(state.treasury<cost){ alert('国库不足'); return; }
+  state.treasury -= cost; p.prosperity += (2 + (c.effects.academyUp||0)); state.fame += 1; state.turnActionUsed=true;
+  renderTop(); log(`内政：在<b>${id}</b>兴学，繁荣上扬，声望+1。`); $('#sectionArea').innerHTML='';
+}
+function actionRelief(){
+  const id = $('#provRelief').value; const p = findProv(id);
+  if(state.treasury<90){ alert('国库不足'); return; }
+  state.treasury -= 90; p.stability += 6; state.happiness += 2; state.turnActionUsed=true;
+  renderTop(); log(`内政：向<b>${id}</b>赈灾，安定+6，民心+2。`); $('#sectionArea').innerHTML='';
+}
+
+/* 军事 */
+function renderMilitary(){
+  const g = state.officers.general;
+  return `
+    <h3>军事</h3>
+    <div class="row">
+      <div>征兵：<label><input type="checkbox" id="cons" ${state.policy.conscription?'checked':''}> 开启（+80*${1+(g.effects.recruitBoost||0)} 军力/月，民心-2，军费↑）</label></div>
+      <div><button onclick="drill()">大演武（-80金，军心+5，声望+2）</button></div>
+    </div>
+    <div class="muted">将军：${g.name}｜${g.trait} — ${g.desc}</div>
+    <div style="margin-top:6px"><button onclick="applyMilitary()">确认</button></div>
+  `;
+}
+function applyMilitary(){ state.policy.conscription = $('#cons').checked; state.turnActionUsed = true; log(`军事：征兵${state.policy.conscription?'开启':'关闭'}`); }
+function drill(){
+  if(state.treasury<80){ alert('国库不足'); return; }
+  const g = state.officers.general;
+  state.treasury -= 80; state.army += 20 + (g.effects.morale||0); state.fame += 2; state.happiness += 1; state.turnActionUsed=true;
+  renderTop(); log('军事：大演武壮军心，军力上升。'); $('#sectionArea').innerHTML='';
+}
+
+/* 外交 */
+function renderDiplomacy(){
+  return `
+    <h3>外交</h3>
+    <div class="row"><div>赈济邻国（-100金，声望+6，和平期+1）</div><div><button onclick="diplomacyAid()">执行</button></div></div>
+    <div class="row"><div>下战书（声望+3，下一回合战争概率↑）</div><div><button onclick="diplomacyThreat()">执行</button></div></div>
+    <div class="row"><div>鼓励学术互访（-120金，来月改革红利）</div><div><button onclick="useReform()">执行</button></div></div>
+  `;
+}
+function diplomacyAid(){ if(state.treasury<100){alert('国库不足');return;} state.treasury-=100; state.fame+=6; state.peaceBuffer+=1; state.turnActionUsed=true; renderTop(); log('外交：赈济邻国，战云暂缓。'); $('#sectionArea').innerHTML=''; }
+function diplomacyThreat(){ state.warHeat+=1; state.fame+=3; state.turnActionUsed=true; renderTop(); log('外交：下战书示威，边境紧张。'); $('#sectionArea').innerHTML=''; }
+function useReform(){ if(state.treasury<120){alert('国库不足');return;} state.treasury-=120; state.reformNext+=1; state.turnActionUsed=true; renderTop(); log('外交：学术互访，来月改革红利。'); $('#sectionArea').innerHTML=''; }
+
+/* 宫廷 */
+function renderCourt(){
+  return `
+    <h3>宫廷</h3>
+    <div class="row"><div>丞相：<span class="tag">${state.officers.chancellor.name}｜${state.officers.chancellor.trait}</span></div><div><button onclick="changeOfficer('chancellor')">任免</button></div></div>
+    <div class="row"><div>将军：<span class="tag">${state.officers.general.name}｜${state.officers.general.trait}</span></div><div><button onclick="changeOfficer('general')">任免</button></div></div>
+    <div class="row"><div>普天同庆（-60金，民心+4）</div><div><button onclick="reward()">赏赐</button></div></div>
+  `;
+}
+function changeOfficer(key){
+  const neo = randomOfficer(key==='chancellor'?'文':'武');
+  state.officers[key]=neo; state.turnActionUsed=true; log(`宫廷：改任${key==='chancellor'?'丞相':'将军'} <b>${neo.name}</b>（${neo.trait}）`); $('#sectionArea').innerHTML='';
+}
+function reward(){ if(state.treasury<60){alert('国库不足');return;} state.treasury-=60; state.happiness+=4; state.turnActionUsed=true; renderTop(); log('宫廷：普天同庆，百官与民皆欢。'); $('#sectionArea').innerHTML=''; }
+
+/* =======================
+   回合结算
+======================= */
+function endTurn(){
+  if(state.gameOver) return;
+
+  // 1) 固定收支
+  const baseTax = (state.pop * (8 + state.policy.tax*6));
+  const taxOfficer = 1 + (state.officers.chancellor.effects.taxBonus||0);
+  const buildBuff = 1 + state.buildBuffNext;
+  const taxIncome = baseTax * taxOfficer * buildBuff * (1 + avgProsperity()/400); // 繁荣影响整体税基
+  const reliefCost = state.policy.relief ? 50 : 0;
+  const g = state.officers.general;
+  const consGain = state.policy.conscription ? Math.round(80*(1+(g.effects.recruitBoost||0))) : 0;
+  const consCost = state.policy.conscription ? 70 : 0;
+  const armyUpkeep = Math.max(0, Math.floor(state.army*0.05)) + consCost;
+  const courtCost = 30;
+  const reformBonus = state.reformNext>0 ? 60 : 0;
+  const cashFlow = taxIncome - armyUpkeep - courtCost - reliefCost + reformBonus;
+
+  state.treasury += cashFlow;
+  if(state.policy.relief) state.happiness += 2;
+  if(state.policy.conscription){ state.army += consGain; state.happiness -= 2; }
+  if(state.officers.chancellor.effects.publicShift){ state.happiness += (Math.random()<0.5?-1:1) * state.officers.chancellor.effects.publicShift; }
+
+  // 2) 事件（战争优先）
+  let warProb = clamp(0.12 + state.warHeat*0.08 - state.peaceBuffer*0.06, 0.02, 0.45);
+  const r = Math.random();
+  let ev;
+  if(r < warProb) ev = makeWarEvent();
+  else if(Math.random()<0.14) ev = disasterEvent();
+  else ev = randomChoiceEvent();
+
+  openChoiceModal(ev, ()=>{
+    // 推进时间
+    state.month++; if(state.month>12){ state.month=1; state.year++; }
+    state.turnActionUsed=false;
+    // 一次性效果衰减
+    state.buildBuffNext=0; if(state.peaceBuffer>0) state.peaceBuffer--; if(state.warHeat>0) state.warHeat--; state.reformNext=0;
+
+    // 记录现金与刷新
+    state.historyCash.push(Math.round(state.treasury));
+    renderTop(); drawChart(); checkEnding();
+  });
+
+  log(`收支：税收<b>+${Math.round(taxIncome)}</b>，军费<b>-${armyUpkeep}</b>，宫廷<b>-${courtCost}</b>，赈灾<b>-${reliefCost}</b>${reformBonus?`，改革<b>+${reformBonus}</b>`:''} → 净额 <b>${Math.round(cashFlow>=0?'+':'')+Math.round(cashFlow)}</b>`);
+}
+
+function avgProsperity(){ return provinces.reduce((s,p)=>s+p.prosperity,0)/provinces.length; }
+
+/* =======================
+   事件库（30+）
+======================= */
+function randomChoiceEvent(){
+  const pool = EVENTS.filter(e=>!e.gate || e.gate());
+  const weighted = [];
+  pool.forEach(e=>{ const w = e.weight||1; for(let i=0;i<w;i++) weighted.push(e); });
+  const base = weighted[Math.floor(Math.random()*weighted.length)];
+  // 如果事件需要省份，随机注入一个具名省份
+  if(base.bindProvince){
+    const pick = provinces[Math.floor(Math.random()*provinces.length)];
+    return base.bindProvince(pick);
+  }
+  return base;
+}
+
+function disasterEvent(){
+  const t = Math.random();
+  if(t<0.5){
+    // 洪涝/旱灾，指向省份
+    const pick = provinces[Math.floor(Math.random()*provinces.length)];
+    const kind = Math.random()<0.5?'洪涝':'旱灾';
+    return {
+      title:`${pick.id} ${kind}`,
+      text:`${pick.id} 遭遇${kind}，田亩受损，粮价波动。`,
+      choices:[
+        {label:'开仓赈济（民心+4，国库-120，省安定+8）', eff:()=>{ pick.stability+=8; return {happiness:4,treasury:-120}; }},
+        {label:'节度自理（民心-3，省安定-6）', eff:()=>{ pick.stability-=6; return {happiness:-3}; }},
+      ]
+    }
+  }else{
+    // 疫疾
+    const pick = provinces[Math.floor(Math.random()*provinces.length)];
+    return {
+      title:`${pick.id} 疫疾`,
+      text:`${pick.id} 传出疫病，坊间惶惧。`,
+      choices:[
+        {label:'派太医施药（国库-90，省安定+6，民心+2）', eff:()=>{ pick.stability+=6; return {treasury:-90,happiness:2}; }},
+        {label:'封禁市井（声望-1，省繁荣-5）', eff:()=>{ pick.prosperity-=5; return {fame:-1}; }},
+      ]
+    }
+  }
+}
+
+function makeWarEvent(){
+  // 选边境省
+  const border = provinces.filter(p=>p.border);
+  const pick = border[Math.floor(Math.random()*border.length)];
+  const g = state.officers.general;
+  const enemy = Math.max(260, 420 + Math.random()*250 - state.fame*1.3);
+  const ours  = state.army + (g.effects.morale||0)*5;
+  const advantage = ours - enemy;
+  return {
+    title:`${pick.id} 边境告急`,
+    text:`斥候回报：敌军约 <b>${Math.round(enemy)}</b>。我军 <b>${Math.round(state.army)}</b>。战火或波及 ${pick.id} 安定。`,
+    choices:[
+      {
+        label:'主动出击（胜：声望+6，军力-80，边省安定+6；败：军力-150，民心-6，边省安定-8）',
+        eff:()=>{
+          const winRate = clamp(0.45 + advantage/800 + (g.effects.tactic||0),0.15,0.85);
+          if(Math.random()<winRate){ pick.stability+=6; return {fame:6,army:-80 + (g.effects.morale||0)}; }
+          else { pick.stability-=8; return {army:-150,happiness:-6}; }
+        }
+      },
+      { label:'固守待援（军力-40，声望-1，民心+1，边省安定+2）', eff:()=>{ pick.stability+=2; return {army:-40,fame:-1,happiness:1}; } }
+    ]
+  }
+}
+
+const EVENTS = [
+  // 经济类
+  { title:'岁稔年丰', text:'五谷丰登，仓廪盈实。', weight:2,
+    choices:[
+      {label:'减免秋税（民心+6，国库-120）', eff:{happiness:6,treasury:-120}},
+      {label:'储粮以备（声望+2，国库+60）', eff:{fame:2,treasury:60}},
+    ]
+  },
+  { title:'盐铁盈余', text:'国营盐铁岁入大增。', choices:[
+      {label:'入库充盈（国库+140）', eff:{treasury:140}},
+      {label:'减赋惠民（民心+4，声望+1，国库-40）', eff:{happiness:4,fame:1,treasury:-40}},
+  ]},
+  { title:'商路新开', text:'南北商路贯通，货畅其流。', choices:[
+      {label:'整修路站（-80金，来月税收+3%）', eff:()=>{ state.buildBuffNext += 0.03; return {treasury:-80}; }},
+      {label:'收取关津（国库+90，民心-1）', eff:{treasury:90,happiness:-1}},
+  ]},
+
+  // 军事类（非战争）
+  { title:'军械改良', text:'匠作局献新式弩机。', choices:[
+      {label:'投入装备（-100金，军力+60）', eff:{treasury:-100,army:60}},
+      {label:'留作研究（声望+2）', eff:{fame:2}},
+  ]},
+  { title:'军纪整饬', text:'军纪肃然，士心稍安。', weight:2, choices:[
+      {label:'嘉奖三军（-60金，军力+30，民心+1）', eff:{treasury:-60,army:30,happiness:1}},
+      {label:'告诫而已（声望+1）', eff:{fame:1}},
+  ]},
+
+  // 外交类
+  { title:'商舶互市', text:'海外商舶来朝互市。', choices:[
+      {label:'免税互惠（声望+3，民心+1，国库-40）', eff:{fame:3,happiness:1,treasury:-40}},
+      {label:'征税创收（国库+120，声望-1）', eff:{treasury:120,fame:-1}},
+  ]},
+  { title:'盟国求援', text:'友邦兵疲粮乏，遣使求援。', choices:[
+      {label:'济以军需（-120金，声望+5，和平期+1）', eff:()=>{ state.peaceBuffer+=1; return {treasury:-120,fame:5}; }},
+      {label:'婉拒其请（声望-2，国库+40）', eff:{fame:-2,treasury:40}},
+  ]},
+
+  // 宫廷类
+  { title:'贪墨案', text:'御史弹劾某地官吏贪墨。', gate:()=>Math.random()>(state.officers.chancellor.effects.antiCorrupt||0), choices:[
+      {label:'重判籍没（声望+4，国库+80）', eff:{fame:4,treasury:80}},
+      {label:'宽宥示恩（民心+5，声望-3）', eff:{happiness:5,fame:-3}},
+  ]},
+  { title:'宗亲请封', text:'宗室贵胄请加封邑。', choices:[
+      {label:'从其所请（民心+1，国库-70）', eff:{happiness:1,treasury:-70}},
+      {label:'量留薄赏（声望+1）', eff:{fame:1}},
+  ]},
+
+  // 灾害（常规）
+  { title:'蝗情渐起', text:'部分州县闻有蝗虫。', choices:[
+      {label:'组织捕蝗（-40金，民心+2）', eff:{treasury:-40,happiness:2}},
+      {label:'祈谷望雨（声望+1）', eff:{fame:1}},
+  ]},
+
+  // 个人事件
+  { title:'御苑秋猎', text:'秋风起，猎期至。', choices:[
+      {label:'盛大围猎（声望+2，民心+1，国库-60）', eff:{fame:2,happiness:1,treasury:-60}},
+      {label:'从简小猎（军力+10）', eff:{army:10}},
+  ]},
+  { title:'微服私访', text:'帝微服出行，得百姓疾苦。', weight:2, choices:[
+      {label:'即刻清理苛派（民心+4，国库-50）', eff:{happiness:4,treasury:-50}},
+      {label:'记于心而后治（声望+2）', eff:{fame:2}},
+  ]},
+
+  // 省份绑定事件示例（经济）
+  { title:'州府商税', bindProvince:(p)=>({
+      title:`${p.id} 商税议`,
+      text:`${p.id} 商路兴旺，州府请增收轻税。`,
+      choices:[
+        {label:'小幅加税（国库+70，省繁荣-2）', eff:()=>{ p.prosperity-=2; return {treasury:70}; }},
+        {label:'维持现行（民心+1）', eff:{happiness:1}},
+      ]
+  })},
+
+  // 省份绑定事件（治安）
+  { title:'盗匪出没', bindProvince:(p)=>({
+      title:`${p.id} 盗匪`,
+      text:`${p.id} 市道有盗，百姓忧惧。`,
+      choices:[
+        {label:'增派巡检（-60金，省安定+6）', eff:()=>{ p.stability+=6; return {treasury:-60}; }},
+        {label:'招安使用（省安定+2，声望-1）', eff:()=>{ p.stability+=2; return {fame:-1}; }},
+      ]
+  })},
+
+  // 省份绑定事件（学术）
+  { title:'书院兴盛', bindProvince:(p)=>({
+      title:`${p.id} 书院`,
+      text:`${p.id} 士子云集，欲扩建讲堂。`,
+      choices:[
+        {label:'拨款扩建（-80金，省繁荣+3，声望+1）', eff:()=>{ p.prosperity+=3; return {treasury:-80,fame:1}; }},
+        {label:'择优扶持（省繁荣+1）', eff:()=>{ p.prosperity+=1; return {}; }},
+      ]
+  })},
+
+  // 更多常规事件
+  { title:'工部请款', text:'工部呈请修缮桥堰。', choices:[
+      {label:'准以经费（-90金，来月税收+2%）', eff:()=>{ state.buildBuffNext += 0.02; return {treasury:-90}; }},
+      {label:'下旬再议（—）', eff:{}},
+  ]},
+  { title:'市舶税漏', text:'查出市舶税漏。', choices:[
+      {label:'严惩追缴（国库+100，声望+2）', eff:{treasury:100,fame:2}},
+      {label:'宽限补缴（民心+2）', eff:{happiness:2}},
+  ]},
+  { title:'边将邀功', text:'边将请自出奇兵。', choices:[
+      {label:'允其自便（若成功：声望+4；失败：军力-60）', eff:()=> Math.random()<0.5?{fame:4}:{army:-60}},
+      {label:'严令稳守（军力+10，声望-1）', eff:{army:10,fame:-1}},
+  ]},
+  { title:'赈谷被侵', text:'仓谷赈济途中多有损耗。', choices:[
+      {label:'彻查粮道（声望+2，民心+1）', eff:{fame:2,happiness:1}},
+      {label:'既往不咎（国库+40，声望-2）', eff:{treasury:40,fame:-2}},
+  ]},
+  { title:'矿脉新发', text:'偏州发现铜矿。', choices:[
+      {label:'开采入官（国库+160，省繁荣-2）', eff:()=>{ const p=provinces[Math.floor(Math.random()*provinces.length)]; p.prosperity-=2; return {treasury:160}; }},
+      {label:'与民共享（民心+3，声望+1）', eff:{happiness:3,fame:1}},
+  ]},
+  { title:'市民争讼', text:'市民争讼聚众。', choices:[
+      {label:'亲派大理卿（-40金，民心+3）', eff:{treasury:-40,happiness:3}},
+      {label:'交由州县（省安定-2）', eff:()=>{ const p=provinces[Math.floor(Math.random()*provinces.length)]; p.stability-=2; return {}; }},
+  ]},
+  { title:'贡品进呈', text:'藩属进贡珍玩。', choices:[
+      {label:'入库估价（国库+110）', eff:{treasury:110}},
+      {label:'以赈民用（民心+4，声望+1）', eff:{happiness:4,fame:1}},
+  ]},
+  { title:'行会垄断', text:'行会欲垄断盐价。', choices:[
+      {label:'官价干预（国库-60，民心+3）', eff:{treasury:-60,happiness:3}},
+      {label:'放任竞争（国库+40，省繁荣-2）', eff:()=>{ const p=provinces[Math.floor(Math.random()*provinces.length)]; p.prosperity-=2; return {treasury:40}; }},
+  ]},
+];
+
+/* =======================
+   弹窗
+======================= */
+function openChoiceModal(eventObj, afterResolve){
+  const mask = $('#modalMask'); const body = $('#modalBody');
+  $('#modalTitle').innerHTML = eventObj.title || '朝报';
+  body.innerHTML = `<div class="muted" style="margin-bottom:8px">${eventObj.text}</div>
+    <div class="choices">
+      ${eventObj.choices.map((c,i)=>`<button onclick="choose(${i})">${c.label}</button>`).join('')}
+    </div>`;
+  mask.style.display='flex';
+  window.choose = (idx)=>{
+    const c = eventObj.choices[idx];
+    const eff = (typeof c.eff==='function') ? c.eff() : c.eff;
+    applyEffects(eff);
+    log(`事件「<b>${eventObj.title}</b>」选择：<i>${c.label}</i>`);
+    closeModal();
+    if(afterResolve) afterResolve();
+  }
+}
+function closeModal(){ $('#modalMask').style.display='none'; }
+function applyEffects(eff){
+  if(!eff) return;
+  state.treasury += eff.treasury||0;
+  state.happiness += eff.happiness||0;
+  state.army += eff.army||0;
+  state.fame += eff.fame||0;
+  renderTop();
+}
+
+/* =======================
+   结局
+======================= */
+function checkEnding(){
+  // 省域极端动荡也会引爆
+  const worst = provinces.reduce((m,p)=>Math.min(m,p.stability),999);
+  if(state.happiness<=0){ return endGame('民心尽失，四方并起。'); }
+  if(state.treasury<-200){ return endGame('国库崩溃，群臣哗变。'); }
+  if(state.army<=0){ return endGame('兵尽矢絶，无以为守。'); }
+  if(worst<=10){ return endGame('边地烽烟不绝，省域崩坏。'); }
+  if(state.happiness>=95) toast('【盛世将临】民心如日中天！');
+  if(state.fame>=90) toast('【威加海内】声望震慑四方！');
+  if(state.treasury>=6000) toast('【富可敌国】金谷满仓！');
+}
+function endGame(reason){
+  state.gameOver = true;
+  log('<b>— 游戏结束 —</b> '+reason);
+  alert('游戏结束：'+reason+'（可“读档”或“新档”重来）');
+}
+
+/* =======================
+   存档
+======================= */
+function saveGame(){ localStorage.setItem('myempire_v04', JSON.stringify({state,provinces})); toast('已存档'); }
+function loadGame(){
+  const raw = localStorage.getItem('myempire_v04'); if(!raw){ toast('无存档'); return; }
+  const data = JSON.parse(raw);
+  Object.assign(state, data.state);
+  provinces.splice(0,provinces.length,...data.provinces);
+  renderTop(); drawChart(); log('读取存档成功。');
+}
+function resetGame(){
+  if(!confirm('开启新档？当前进度将被覆盖')) return;
+  const freshState = {
+    year:1, month:1, treasury:1000, happiness:80, army:500, fame:50, pop:120,
+    policy:{tax:1,relief:false,conscription:false},
+    officers:{chancellor: randomOfficer('文'), general: randomOfficer('武')},
+    historyCash:[1000], turnActionUsed:false, gameOver:false,
+    buildBuffNext:0, peaceBuffer:0, warHeat:0, reformNext:0
+  };
+  Object.assign(state, freshState);
+  const freshProv = [
+    {id:'并州', border:true, prosperity:55, stability:68, note:'北境要冲'},
+    {id:'幽州', border:true, prosperity:48, stability:62, note:'边贸繁忙'},
+    {id:'雍州', border:false, prosperity:60, stability:72, note:'宗庙之地'},
+    {id:'豫州', border:false, prosperity:64, stability:70, note:'沃野千里'},
+    {id:'江南', border:false, prosperity:75, stability:78, note:'鱼米之乡'},
+    {id:'岭南', border:true, prosperity:58, stability:65, note:'海贸门户'},
+  ];
+  provinces.splice(0,provinces.length,...freshProv);
+  renderTop(); drawChart(); log('新档开启。');
+}
+
+/* =======================
+   折线图
+======================= */
+const ctx = document.querySelector('#chart').getContext('2d');
+function drawChart(){
+  const W = ctx.canvas.width = ctx.canvas.clientWidth;
+  const H = ctx.canvas.height = ctx.canvas.clientHeight;
+  ctx.clearRect(0,0,W,H);
+  const data = state.historyCash.slice(-60);
+  if(data.length<2) return;
+  const min = Math.min(...data), max = Math.max(...data);
+  const pad = 12; const xStep = (W-2*pad)/(data.length-1);
+  const y = v => H - pad - ((v-min)/(max-min||1))*(H-2*pad);
+  ctx.lineWidth = 2; ctx.strokeStyle = '#a87b0f'; ctx.beginPath();
+  data.forEach((v,i)=>{ const px=pad+i*xStep, py=y(v); if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py); }); ctx.stroke();
+  ctx.strokeStyle='#ddd'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(pad,y(0)); ctx.lineTo(W-pad,y(0)); ctx.stroke();
+}
+
+/* =======================
+   启动
+======================= */
+function boot(){
+  renderTop(); drawChart(); log('游戏开始：朕登大宝，百官来贺。');
+  openChoiceModal({
+    title:'登基大典',
+    text:'百官山呼万岁，万民齐贺大统。',
+    choices:[
+      {label:'普天同庆（-80金，民心+6，声望+2）', eff:{treasury:-80,happiness:6,fame:2}},
+      {label:'从简以德（-0金，声望+3）', eff:{fame:3}},
+    ]
+  }, ()=>{});
+}
+window.addEventListener('load', boot);
 </script>
-
 </body>
 </html>
